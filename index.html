@@ -65,8 +65,29 @@ body{
 }
 .tile.pop{animation:pop .2s ease}
 .tile.appear{animation:appear .2s ease}
-@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
-@keyframes appear{0%{transform:scale(0)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes appear{0%{transform:scale(0) rotate(-10deg)}60%{transform:scale(1.15) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px var(--accent)}50%{box-shadow:0 0 40px var(--accent),0 0 60px var(--accent2)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes scoreFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.5)}}
+@keyframes shine{0%{left:-100%}100%{left:200%}}
+@keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes rainbow{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+
+.tile.high{animation:glow 2s ease-in-out infinite}
+.tile.mega{animation:glow 1s ease-in-out infinite,rainbow 3s linear infinite}
+.tile::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:skewX(-20deg)}
+.tile.shine::after{animation:shine .6s ease-out}
+
+.board-wrap.shake{animation:shake .3s ease}
+.score-box.pulse{animation:pulse .3s ease}
+
+.particle{position:absolute;pointer-events:none;border-radius:50%;z-index:20}
+.score-float{position:absolute;font-weight:900;font-size:1.5rem;color:var(--accent);text-shadow:0 0 10px var(--accent);pointer-events:none;z-index:25;animation:scoreFloat .8s ease-out forwards}
+.confetti{position:absolute;width:10px;height:10px;z-index:30;animation:confettiFall 3s linear forwards}
+.combo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;font-weight:900;color:var(--accent);text-shadow:0 0 20px var(--accent);pointer-events:none;z-index:15;opacity:0;transition:opacity .2s}
+.combo.show{opacity:1;animation:pulse .5s ease}
 
 .overlay{
   position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
@@ -314,21 +335,75 @@ function spawn(){
   return[r,c];
 }
 
+// Effects
+let combo=0,lastMergeTime=0;
+function spawnParticles(x,y,color,count=12){
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const angle=Math.random()*Math.PI*2;
+    const speed=50+Math.random()*80;
+    const size=4+Math.random()*6;
+    p.style.cssText=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${color};`;
+    $wrap.appendChild(p);
+    const vx=Math.cos(angle)*speed,vy=Math.sin(angle)*speed;
+    let px=x,py=y,life=1;
+    const animate=()=>{
+      life-=.03;
+      if(life<=0){p.remove();return}
+      px+=vx*.02;py+=vy*.02;
+      p.style.left=px+'px';p.style.top=py+'px';p.style.opacity=life;p.style.transform=`scale(${life})`;
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }
+}
+function spawnScoreFloat(x,y,pts){
+  const el=document.createElement('div');
+  el.className='score-float';
+  el.textContent='+'+pts;
+  el.style.left=x+'px';el.style.top=y+'px';
+  $wrap.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+function spawnConfetti(count=50){
+  const colors=['#ff0','#f0f','#0ff','#f00','#0f0','#00f','#ff8800','#ff0088'];
+  for(let i=0;i<count;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.cssText=`left:${Math.random()*100}%;top:-10px;background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay:${Math.random()*2}s;animation-duration:${2+Math.random()*2}s;
+      width:${5+Math.random()*10}px;height:${5+Math.random()*10}px;border-radius:${Math.random()>.5?'50%':'0'}`;
+    $wrap.appendChild(c);
+    setTimeout(()=>c.remove(),5000);
+  }
+}
+function showCombo(n){
+  let cb=$wrap.querySelector('.combo');
+  if(!cb){cb=document.createElement('div');cb.className='combo';$wrap.appendChild(cb)}
+  cb.textContent=n+'x COMBO!';
+  cb.classList.add('show');
+  setTimeout(()=>cb.classList.remove('show'),800);
+}
+function screenShake(){
+  $wrap.classList.add('shake');
+  setTimeout(()=>$wrap.classList.remove('shake'),300);
+}
+
 function render(merged=[],spawned=null){
   $('score').textContent=score.toLocaleString();
-  if(score>best){best=score;localStorage.setItem('rf2048_best',best)}
+  if(score>best){best=score;localStorage.setItem('rf2048_best',best);$('best').parentElement.classList.add('pulse');setTimeout(()=>$('best').parentElement.classList.remove('pulse'),300)}
   $('best').textContent=best.toLocaleString();
   
-  // Clear old tiles
   $tiles.innerHTML='';
-  
-  // Get cell dimensions from actual grid
   const cells=$board.querySelectorAll('.cell');
   if(!cells.length)return;
   const rect0=cells[0].getBoundingClientRect();
-  const wrapRect=$tiles.getBoundingClientRect();
+  const wrapRect=$wrap.getBoundingClientRect();
   const cellSize=rect0.width;
   const gap=cells[1]?cells[1].getBoundingClientRect().left-rect0.right:12;
+  const offsetX=rect0.left-wrapRect.left;
+  const offsetY=rect0.top-wrapRect.top;
   
   for(let r=0;r<4;r++)for(let c=0;c<4;c++){
     const v=grid[r][c];
@@ -337,20 +412,24 @@ function render(merged=[],spawned=null){
     const tile=document.createElement('div');
     tile.className='tile';
     
-    // Check animations
-    if(merged.some(p=>p[0]===r&&p[1]===c))tile.classList.add('pop');
+    // Animations
+    const isMerged=merged.some(p=>p[0]===r&&p[1]===c);
+    if(isMerged){tile.classList.add('pop','shine');
+      const tx=offsetX+c*(cellSize+gap)+cellSize/2;
+      const ty=offsetY+r*(cellSize+gap)+cellSize/2;
+      spawnParticles(tx,ty,getColor(v)[0],10+Math.log2(v)*2);
+    }
     if(spawned&&spawned[0]===r&&spawned[1]===c)tile.classList.add('appear');
+    
+    // Glow on high tiles
+    if(v>=128)tile.classList.add('high');
+    if(v>=2048)tile.classList.add('mega');
     
     const[bg,fg]=getColor(v);
     const top=r*(cellSize+gap);
     const left=c*(cellSize+gap);
     
-    tile.style.cssText=`
-      top:${top}px;left:${left}px;
-      width:${cellSize}px;height:${cellSize}px;
-      background:${bg};color:${fg};
-      font-size:${fontSize(v,cellSize)}px;
-    `;
+    tile.style.cssText=`top:${top}px;left:${left}px;width:${cellSize}px;height:${cellSize}px;background:${bg};color:${fg};font-size:${fontSize(v,cellSize)}px;`;
     tile.textContent=v;
     $tiles.appendChild(tile);
   }
@@ -397,14 +476,35 @@ function move(dir){
   if(!moved){prev=null;return}
   
   moves++;
-  beep(merged.length?600:300,.06);
+  const pts=merged.reduce((sum,m)=>sum+grid[m[0]][m[1]],0);
+  
+  // Combo system
+  const now=Date.now();
+  if(merged.length>0){
+    if(now-lastMergeTime<1000)combo++;else combo=1;
+    lastMergeTime=now;
+    if(combo>=3)showCombo(combo);
+    if(merged.length>=2||pts>=128)screenShake();
+  }
+  
+  beep(merged.length?400+combo*50:300,.06+combo*.01);
   const spawned=spawn();
   render(merged,spawned);
+  
+  // Score float
+  if(pts>0&&merged.length){
+    const cells=$board.querySelectorAll('.cell');
+    const rect=cells[merged[0][0]*4+merged[0][1]].getBoundingClientRect();
+    const wr=$wrap.getBoundingClientRect();
+    spawnScoreFloat(rect.left-wr.left+rect.width/2,rect.top-wr.top,pts*(combo>=2?combo:1));
+  }
+  
   updateStats();
   
   if(won&&!keepGoing){
     $('winOverlay').classList.add('show');
     beep(523,.1);setTimeout(()=>beep(659,.1),100);setTimeout(()=>beep(784,.15),200);
+    spawnConfetti(80);
   }else if(isOver()){
     $('loseOverlay').classList.add('show');
     $('finalScore').textContent=score.toLocaleString();
