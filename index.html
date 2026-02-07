@@ -70,15 +70,12 @@ body{
 @keyframes glow{0%,100%{box-shadow:0 0 20px var(--accent)}50%{box-shadow:0 0 40px var(--accent),0 0 60px var(--accent2)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 @keyframes scoreFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.5)}}
-@keyframes shine{0%{left:-100%}100%{left:200%}}
 @keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes rainbow{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
 
 .tile.high{animation:glow 2s ease-in-out infinite}
 .tile.mega{animation:glow 1s ease-in-out infinite,rainbow 3s linear infinite}
-.tile::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:skewX(-20deg)}
-.tile.shine::after{animation:shine .6s ease-out}
 
 .board-wrap.shake{animation:shake .3s ease}
 .score-box.pulse{animation:pulse .3s ease}
@@ -414,7 +411,7 @@ function render(merged=[],spawned=null){
     
     // Animations
     const isMerged=merged.some(p=>p[0]===r&&p[1]===c);
-    if(isMerged){tile.classList.add('pop','shine');
+    if(isMerged){tile.classList.add('pop');
       const tx=offsetX+c*(cellSize+gap)+cellSize/2;
       const ty=offsetY+r*(cellSize+gap)+cellSize/2;
       spawnParticles(tx,ty,getColor(v)[0],10+Math.log2(v)*2);
