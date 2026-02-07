@@ -139,6 +139,7 @@ body{
   <button class="btn" id="btnUndo">↩ Undo</button>
   <button class="btn btn-icon" id="btnTheme" title="Theme">🎨</button>
   <button class="btn btn-icon" id="btnSound" title="Sound">🔊</button>
+  <button class="btn btn-icon" id="btnEffects" title="Effects">✨</button>
 </div>
 <div class="board-wrap" id="wrap">
   <div class="board" id="board"></div>
@@ -261,7 +262,7 @@ const THEMES={
   }
 };
 
-let grid,score,best,prev,won,keepGoing,moves,startTime,timer,sound=true,theme='default';
+let grid,score,best,prev,won,keepGoing,moves,startTime,timer,sound=true,effects=true,theme='default';
 
 function getColor(v){
   const palette=THEMES[theme]||THEMES.default;
@@ -336,6 +337,7 @@ function spawn(){
 // Effects
 let combo=0,lastMergeTime=0;
 function spawnParticles(x,y,color,count=12){
+  if(!effects)return;
   for(let i=0;i<count;i++){
     const p=document.createElement('div');
     p.className='particle';
@@ -357,6 +359,7 @@ function spawnParticles(x,y,color,count=12){
   }
 }
 function spawnScoreFloat(x,y,pts){
+  if(!effects)return;
   const el=document.createElement('div');
   el.className='score-float';
   el.textContent='+'+pts;
@@ -365,6 +368,7 @@ function spawnScoreFloat(x,y,pts){
   setTimeout(()=>el.remove(),800);
 }
 function spawnConfetti(count=50){
+  if(!effects)return;
   const colors=['#ff0','#f0f','#0ff','#f00','#0f0','#00f','#ff8800','#ff0088'];
   for(let i=0;i<count;i++){
     const c=document.createElement('div');
@@ -377,6 +381,7 @@ function spawnConfetti(count=50){
   }
 }
 function showCombo(n){
+  if(!effects)return;
   let cb=$wrap.querySelector('.combo');
   if(!cb){cb=document.createElement('div');cb.className='combo';$wrap.appendChild(cb)}
   cb.textContent=n+'x COMBO!';
@@ -384,6 +389,7 @@ function showCombo(n){
   setTimeout(()=>cb.classList.remove('show'),800);
 }
 function screenShake(){
+  if(!effects)return;
   $wrap.classList.add('shake');
   setTimeout(()=>$wrap.classList.remove('shake'),300);
 }
@@ -549,6 +555,7 @@ $('btnTheme').onclick=()=>$('themeModal').classList.add('show');
 $('closeModal').onclick=()=>$('themeModal').classList.remove('show');
 $('themeModal').onclick=e=>{if(e.target.id==='themeModal')$('themeModal').classList.remove('show')};
 $('btnSound').onclick=()=>{sound=!sound;$('btnSound').textContent=sound?'🔊':'🔇'};
+$('btnEffects').onclick=()=>{effects=!effects;$('btnEffects').textContent=effects?'✨':'💤'};
 document.querySelectorAll('.theme-btn').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));
 
 window.addEventListener('resize',()=>render());
