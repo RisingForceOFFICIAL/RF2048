@@ -401,7 +401,7 @@ function applyTheme(t){
   theme=t;
   localStorage.setItem('rf2048_theme',t);
   document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));
-  setTimeout(()=>render(),50);
+  render();
 }
 
 // Events
