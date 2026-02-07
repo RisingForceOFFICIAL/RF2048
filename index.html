@@ -219,13 +219,17 @@ const THEMES={
     65536:['#f97316','#fff'],131072:['#fb923c','#78350f']
   }
 };
-function getColor(v){return (THEMES[theme]&&THEMES[theme][v])||THEMES.default[v]||['#0ea5e9','#fff']}
+
+let grid,score,best,prev,won,keepGoing,moves,startTime,timer,sound=true,theme='default';
+
+function getColor(v){
+  const palette=THEMES[theme]||THEMES.default;
+  return palette[v]||['#0ea5e9','#fff'];
+}
 function fontSize(v,s){
   if(v<100)return s*.5;if(v<1000)return s*.4;
   if(v<10000)return s*.32;if(v<100000)return s*.26;return s*.22;
 }
-
-let grid,score,best,prev,won,keepGoing,moves,startTime,timer,sound=true,theme='default';
 const $=id=>document.getElementById(id);
 const $board=$('board'),$tiles=$('tileLayer'),$wrap=$('wrap');
 
