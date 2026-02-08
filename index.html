@@ -210,7 +210,7 @@ const THEMES={
 };
 
 let grid,score,best,prev,won,keepGoing,moves,startTime,timer;
-let sound=true,effects=true,theme='default';
+let sound=true,effects=true,theme='default',usedHint=false;
 
 const $=id=>document.getElementById(id);
 const $board=$('board'),$tiles=$('tileLayer'),$wrap=$('wrap');
@@ -234,7 +234,7 @@ function beep(freq,dur,type='sine',vol=.1){
 
 function init(){
   grid=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
-  score=0;won=false;keepGoing=false;prev=null;moves=0;
+  score=0;won=false;keepGoing=false;prev=null;moves=0;usedHint=false;
   best=+(localStorage.getItem('rf2048_best')||0);
   theme=localStorage.getItem('rf2048_theme')||'default';
   sound=localStorage.getItem('rf2048_sound')!=='false';
@@ -283,7 +283,7 @@ function screenShake(){if(!effects)return;$wrap.classList.add('shake');setTimeou
 
 function render(merged=[],spawned=null){
   $('score').textContent=score.toLocaleString();
-  if(score>best){best=score;localStorage.setItem('rf2048_best',best)}
+  if(score>best&&!usedHint){best=score;localStorage.setItem('rf2048_best',best)}
   $('best').textContent=best.toLocaleString();
   $tiles.innerHTML='';
   const cells=$board.querySelectorAll('.cell');if(!cells.length)return;
@@ -357,6 +357,7 @@ function getBestMove(){
   return best;
 }
 function showHint(){
+  usedHint=true;
   const best=getBestMove();
   if(!best)return;
   const arrows={up:'⬆️',down:'⬇️',left:'⬅️',right:'➡️'};
