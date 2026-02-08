@@ -84,7 +84,11 @@ body{
 .combo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2.5rem;font-weight:900;color:var(--accent);text-shadow:0 0 15px var(--accent);pointer-events:none;z-index:15;opacity:0}
 .combo.show{opacity:1;animation:pulse .4s ease}
 
-.hint-arrow{position:absolute;font-size:2.5rem;color:var(--accent);text-shadow:0 0 15px var(--accent);pointer-events:none;z-index:30;animation:pulse 1s infinite}
+.hint-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;animation:fadeIn .2s ease}
+.hint-box{background:var(--bg2);border:2px solid var(--accent);border-radius:12px;padding:20px 30px;text-align:center;box-shadow:0 0 30px var(--accent)}
+.hint-dir{font-size:1rem;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:2px}
+.hint-arrow{font-size:3rem;display:block;animation:pulse .5s infinite}
+@keyframes hintPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.8}}
 
 .stats{display:flex;gap:16px;margin-top:10px;font-size:.7rem;color:var(--text2)}
 
@@ -193,6 +197,19 @@ body{
     </div>
     
     <button class="btn modal-close" id="closeSettings">Done</button>
+  </div>
+</div>
+
+<!-- Hint Warning Modal -->
+<div class="modal" id="hintWarningModal">
+  <div class="modal-box">
+    <h3>⚠️ Warning</h3>
+    <p style="text-align:center;color:var(--text2);margin-bottom:16px;font-size:.9rem">Using hints will <strong style="color:var(--accent)">disqualify</strong> this run from the Best Score.</p>
+    <p style="text-align:center;color:var(--text2);margin-bottom:20px;font-size:.85rem">Are you sure you want to continue?</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="hintCancel" style="flex:1">Cancel</button>
+      <button class="btn btn-hint" id="hintConfirm" style="flex:1">Show Hint</button>
+    </div>
   </div>
 </div>
 
@@ -358,15 +375,25 @@ function getBestMove(){
 }
 function showHint(){
   usedHint=true;
-  const best=getBestMove();
-  if(!best)return;
-  const arrows={up:'⬆️',down:'⬇️',left:'⬅️',right:'➡️'};
-  let hint=$wrap.querySelector('.hint-arrow');
-  if(!hint){hint=document.createElement('div');hint.className='hint-arrow';$wrap.appendChild(hint)}
-  hint.textContent=arrows[best];
-  hint.style.cssText=`top:50%;left:50%;transform:translate(-50%,-50%)`;
-  setTimeout(()=>hint.remove(),1500);
-  beep(800,.05);
+  const bestDir=getBestMove();
+  if(!bestDir)return;
+  const arrows={up:'↑',down:'↓',left:'←',right:'→'};
+  const labels={up:'SWIPE UP',down:'SWIPE DOWN',left:'SWIPE LEFT',right:'SWIPE RIGHT'};
+  
+  // Remove old hint
+  const old=$wrap.querySelector('.hint-overlay');if(old)old.remove();
+  
+  // Create nice hint overlay
+  const overlay=document.createElement('div');overlay.className='hint-overlay';
+  overlay.innerHTML=`<div class="hint-box"><div class="hint-dir">${labels[bestDir]}</div><span class="hint-arrow">${arrows[bestDir]}</span></div>`;
+  $wrap.appendChild(overlay);
+  setTimeout(()=>overlay.remove(),1800);
+  beep(600,.08);
+}
+
+function promptHint(){
+  if(usedHint){showHint();return}
+  $('hintWarningModal').classList.add('show');
 }
 
 function applyTheme(t){document.body.className=t==='default'?'':'theme-'+t;theme=t;localStorage.setItem('rf2048_theme',t);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));render()}
@@ -379,7 +406,9 @@ $wrap.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx,dy
 
 $('btnNew').onclick=$('btnNewW').onclick=$('btnNewL').onclick=init;
 $('btnUndo').onclick=undo;
-$('btnHint').onclick=showHint;
+$('btnHint').onclick=promptHint;
+$('hintCancel').onclick=()=>$('hintWarningModal').classList.remove('show');
+$('hintConfirm').onclick=()=>{$('hintWarningModal').classList.remove('show');showHint()};
 $('btnKeep').onclick=()=>{keepGoing=true;$('winOverlay').classList.remove('show')};
 $('btnSettings').onclick=()=>$('settingsModal').classList.add('show');
 $('closeSettings').onclick=()=>$('settingsModal').classList.remove('show');
